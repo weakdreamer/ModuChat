@@ -1,0 +1,221 @@
+基于“智能体协作守则(1.2.1)”和之前的架构方案，我为您细化了这份可落地的实施方案。
+
+本方案的核心策略是**“契约优先”**（对应守则中的“数据契约不可破”），先定义好前后端交互的数据结构，再并行开发。
+
+1. 预期的项目架构 (Project Structure)
+我们将项目根目录分为 backend 和 frontend 两个独立的工作区，这是为了保持边界清晰。
+ModulChat/
+├── .github/
+│   └── copilot-instructions.md  # AI 协作守则 (已存在)
+├── backend/                     # [后端] Python FastAPI
+│   ├── app/
+│   │   ├── core/                # 核心配置
+│   │   │   ├── config.py        # 环境变量加载
+│   │   │   └── security.py      # JWT 加密与验证
+│   │   ├── db/
+│   │   │   ├── session.py       # 异步数据库连接池
+│   │   │   └── base.py          # SQLAlchemy Base
+│   │   ├── models/              # [持久层] 数据库表模型
+│   │   │   ├── user.py
+│   │   │   └── message.py
+│   │   ├── schemas/             # [契约层] Pydantic 数据校验
+│   │   │   ├── auth.py          # 登录注册契约
+│   │   │   └── chat.py          # 消息结构契约
+│   │   ├── api/                 # REST 路由 (无状态业务)
+│   │   │   ├── deps.py          # 依赖注入 (获取当前用户)
+│   │   │   └── v1/              # 版本化接口
+│   │   └── websockets/          # 实时通讯核心
+│   │       ├── manager.py       # 连接管理器 (单例)
+│   │       └── router.py        # WS 路由与事件分发
+│   ├── main.py                  # 入口文件
+│   ├── requirements.txt
+│   └── README.md                # 模块说明书 (按守则要求)
+└── frontend/                    # [前端] React + Vite
+    ├── src/
+    │   ├── api/                 # Axios 封装与 REST 请求
+    │   ├── components/          # UI 组件
+    │   │   ├── ChatBubble.tsx   # 消息气泡
+    │   │   └── UserList.tsx     # 用户列表
+    │   ├── store/               # 状态管理 (Zustand)
+    │   │   ├── useAuthStore.ts
+    │   │   └── useChatStore.ts
+    │   ├── types/               # TypeScript 类型定义 (对应 Pydantic)
+    │   └── App.tsx
+    ├── tailwind.config.js       # 样式配置
+    └── README.md                # 模块说明书
+2. 核心数据契约 (Data Contracts)
+为了保证 AI 开发时的准确性，我们在实施前必须锁死以下定义：
+// 客户端 -> 发送 -> 服务端
+{
+  "type": "chat.text",          // 事件类型：文本消息
+  "payload": {
+    "content": "你好，世界！"
+  }
+}
+
+// 服务端 -> 广播 -> 客户端
+{
+  "type": "chat.message",       // 事件类型：收到消息
+  "data": {
+    "id": 101,
+    "sender_id": 1,
+    "sender_name": "Alice",
+    "content": "你好，世界！",
+    "timestamp": "2026-01-18T10:20:00Z"
+  }
+}
+A. WebSocket 消息协议
+这是最容易出问题的地方。我们定义统一的信封结构：
+
+B. 数据库模型 (ER 简述)
+User: id (PK), username (Unique), hashed_password, avatar_url, is_active
+Message: id (PK), sender_id (FK), content, message_type, created_at (索引)
+3. 分阶段实施计划 (Action Plan)
+考虑到 AI 代理上下文限制，我们将任务切分为4个原子化步骤。每一步都在上一步验证通过后再执行。
+
+🔴 第一步：后端骨架与认证 (Backend Foundation)
+目标：跑通 FastAPI 服务，实现注册和登录，生成 JWT Token。
+动作：
+创建 backend 目录与虚拟环境。
+编写 core/config.py 和 db/session.py (SQLite 异步)。
+实现 User 模型和 /auth/login 接口。
+验证：使用 curl 或 Swagger UI 成功获取 Token。
+🔴 第二步：WebSocket 核心 (WebSocket Core)
+目标：实现多用户连接保持与广播。
+动作：
+编写 websockets/manager.py，管理 List[WebSocket]。
+实现 WebSocket 鉴权（在握手阶段验证 Token）。
+实现简单的“回显”和“广播”功能。
+验证：使用 WebSocket测试工具（如 Postman）开启两个连接，A发送消息，B能收到。
+🔴 第三步：前端脚手架与 UI (Frontend Base)
+目标：搭建 React + Tailwind 环境，实现“毛玻璃”视觉框架。
+动作：
+初始化 Vite 项目。
+配置 Tailwind CSS 主题（深色模式、透明度）。
+编写 ChatLayout 组件（左侧边栏 + 右侧聊天区）。
+验证：浏览器可看到静态的聊天室界面。
+🔴 第四步：联调与状态管理 (Integration)
+目标：前后端打通，实现完整聊天流程。
+动作：
+前端集成 useWebSocket hook，对接后端 WS 地址。
+实现在线状态更新、消息发送、历史记录加载。
+验证：完整用户旅程测试（注册->登录->发消息->接收）。
+4. 下一步行动
+如果有不需要调整的地方，建议我们立即开始 “第一步：后端骨架与认证”。
+
+只需要您回复 “开始第一步”，我将执行以下操作：
+
+创建 backend 文件夹结构。
+配置 Python 环境。
+生成核心的基础代码（配置、数据库连接、用户模型）。
+您可以吗？
+
+5. 错误处理与安全措施
+为了确保系统的健壮性和安全性，我们补充以下措施：
+
+- 异常捕获：后端API和WebSocket路由中捕获异常，返回标准化错误响应（如{"error": "Invalid token", "code": 401}）。前端在网络断开时自动重连（指数退避），显示用户友好的提示。
+- 安全措施：Token过期时自动刷新或提示重新登录。WebSocket握手阶段验证Token有效性和权限。防止XSS：前端使用DOMPurify清理用户输入，后端验证消息内容长度和格式。
+- 其他：启用CORS仅允许指定域名，日志记录异常以便追踪。
+
+6. 扩展与兼容性预留
+为支持未来扩展，我们预留以下接口和契约：
+
+- 文件上传：预留API /api/v1/upload，支持POST文件，后端存储到云服务（如AWS S3），返回文件URL。契约扩展消息类型{"type": "chat.file", "payload": {"file_url": "...", "file_name": "..."}}
+- 群聊：预留数据库模型Group: id, name, members (多对多关系)。API /api/v1/groups 创建群组，WebSocket事件{"type": "chat.group_message", "data": {...}}
+- 接入API与大模型聊天：预留配置项 base_url 和 api_key（环境变量）。新增API /api/v1/ai_chat，调用外部模型生成回复。契约{"type": "chat.ai_response", "data": {"content": "AI回复"}}
+
+这些预留确保向后兼容，扩展时仅追加字段。
+
+7. 测试与验证手册
+
+
+
+这是一个非常关键的问题。根据《智能体守则》中“测试闭环”的要求，每一个开发阶段都必须包含可复现的验证步骤。
+
+我为您制定了详细的四阶段测试与验证手册。这不仅包含自动化测试，还包含您可以亲自执行的“手动冒烟测试”步骤。
+
+7. 测试与验证手册
+🟢 阶段一：后端骨架与认证 (Backend Foundation)
+目标：确保服务器能跑起来，用户能注册、能拿到 Token。
+
+🛠️ 自动化测试
+
+工具：pytest
+用例：
+注册新用户 -> 预期 200 OK。
+重复注册同名用户 -> 预期 400 Bad Request。
+使用错误密码登录 -> 预期 401 Unauthorized。
+命令：pytest tests/test_auth.py
+🖐️ 手动测试 (Human Verification)
+
+启动服务：在终端运行 uvicorn main:app --reload --port 8765。
+打开文档：浏览器访问 http://127.0.0.1:8000/docs (FastAPI 自带 Swagger UI)。
+注册：找到 /auth/register，点击 "Try it out"，输入 {username: "test1", password: "123"}，执行。
+✅ 预期：响应体包含 user_id。
+登录：找到 /auth/token，输入相同账号密码。
+✅ 预期：响应体包含 access_token 字符串。复制这个 Token，后面要用。
+🟢 阶段二：WebSocket 核心 (WebSocket Core)
+目标：验证连接不掉线，A说话B能听到。
+
+🛠️ 自动化测试
+
+工具：pytest + TestClient (WebSocket支持)
+用例：
+连接 WS 接口 -> 握手成功。
+发送文本消息 -> 收到回显确认。
+命令：pytest tests/test_websocket.py
+🖐️ 手动测试 (Human Verification)
+
+工具：Postman (支持 WebSocket) 或 在线工具 (如 websocketking.com)
+准备：使用阶段一获取的 Token。
+建立连接 A：连接 ws://127.0.0.1:8000/ws/chat?token={Token_A}。
+✅ 预期：连接状态变绿 (Connected)。
+建立连接 B：打开第二个标签页，用另一个 Token 连接。
+发送消息：在 A 窗口发送 JSON：{"type": "chat.text", "payload": {"content": "Hello B"}}。
+验证接收：观察 B 窗口。
+✅ 预期：B 收到 {"type": "chat.message", "sender": "test1", "content": "Hello B" ...}。
+🟢 阶段三：前端脚手架与 UI (Frontend Base)
+目标：验证界面不丑，组件响应正常，无报错。
+
+🛠️ 自动化测试
+
+暂不引入复杂的 E2E 测试，依靠编译检查（TypeScript）。
+🖐️ 手动测试 (Human Verification)
+
+启动前端：npm run dev。
+视觉检查：访问 http://localhost:5173。
+✅ 预期：看到深色背景和毛玻璃效果的输入框。
+响应式检查：按 F12 切换到手机模式 (iPhone SE 尺寸)。
+✅ 预期：侧边栏自动隐藏或变为汉堡菜单，布局不崩坏。
+输入检查：在输入框输入内容，按 Shift+Enter。
+✅ 预期：输入框换行，而不是发送。
+🟢 阶段四：联调与状态管理 (Final Integration)
+目标：真实用户场景（Happy Path）。
+
+🖐️ 手动测试 (The Golden Test)
+环境准备：
+终端 1: 后端运行中。
+终端 2: 前端运行中。
+双人对聊：
+浏览器 普通窗口：登录账号 Alice。
+浏览器 无痕窗口：登录账号 Bob。
+实时性验证：
+Alice 输入 "你好 Bob"，按回车。
+✅ 预期：Alice 屏幕上的气泡立即上浮。
+✅ 预期：Bob 屏幕无需刷新，立即出现 Alice 的消息气泡。
+历史记录验证：
+刷新 Bob 的页面。
+✅ 预期：聊天记录里依然有 "你好 Bob" 这条消息。
+断网测试 (可选)：
+在终端 1 按 Ctrl+C 停止后端。
+✅ 预期：前端顶部出现黄色 "连接已断开" 提示。
+重启后端。
+✅ 预期：前端提示变为绿色 "已连接"。
+📝 补充：关于 AI 指令的更新
+既然架构和测试方案已确立，在开始写代码前，我会列出 copilot-instructions.md 的更新内容，由您手动更改。该文件作为项目的**“宪法”**，确保之后我（或任何 AI 代理）在生成代码时：
+
+强制使用 Pydantic Schema 定义接口。
+强制遵循上述的目录结构。
+强制在每次提交代码块后，提醒您运行上述对应的测试步骤。
+您同意这个测试计划吗？ 如果同意，我将列出指令更新内容，然后开始创建项目结构。
+
