@@ -136,7 +136,7 @@ ModuChat/
 
 - Python 3.12+
 - Node.js 18+
-- npm 或 yarn
+- pnpm（推荐）或 npm
 - Windows 10/11 或 Windows Server 2019+
 
 ### 后端安装
@@ -187,12 +187,16 @@ cd frontend
 
 2. **安装依赖**
 ```bash
-npm install
+pnpm install
 ```
 
 3. **启动前端开发服务器**
 ```bash
-# 使用npm
+# 使用 pnpm（推荐）
+pnpm run dev
+
+# 或使用 npm
+npm install
 npm run dev
 
 # 或使用批处理脚本（Windows）
@@ -201,6 +205,11 @@ start-frontend.bat
 ```
 
 前端应用将在 `http://localhost:8765` 运行
+
+如果你正在从 npm 迁移到 pnpm，可参考：
+
+- `frontend/README-pnpm.md`
+- `frontend/migrate-to-pnpm.ps1`
 
 ## 📖 使用说明
 
@@ -318,8 +327,8 @@ pip install -r requirements.txt
 4. **配置前端**
 ```powershell
 cd ModuChat\frontend
-npm install
-npm run build
+pnpm install
+pnpm run build
 ```
 
 5. **启动服务**
