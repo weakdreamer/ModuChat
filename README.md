@@ -185,6 +185,8 @@ start-backend.bat
 cd frontend
 ```
 
+如果前端目录里已经存在 `pnpm-lock.yaml`，默认优先使用 `pnpm`。
+
 2. **安装依赖**
 ```bash
 pnpm install
