@@ -213,6 +213,8 @@ start-frontend.bat
 - `frontend/README-pnpm.md`
 - `frontend/migrate-to-pnpm.ps1`
 
+安装完成后，建议先运行一次 `pnpm run build`，确认前端依赖和 TypeScript 构建都正常。
+
 ## 📖 使用说明
 
 ### 1. 访问应用
